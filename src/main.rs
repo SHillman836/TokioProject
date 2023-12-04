@@ -1,62 +1,49 @@
-mod file_manager;
-mod transformation;
-mod enums;
+mod data_pipeline;
 
-use file_manager::{read_file, write_to_file};
-use transformation::Transformation;
-use enums::MathematicalMethod;
+use data_pipeline::file_manager::file_reader::FileReader;
+use data_pipeline::file_manager::file_writer::FileWriter;
+use data_pipeline::mathematical_function::transformation::MathematicalMethod;
+use processes::Processor;
 
 use std::env;
 use std::fs::File;
 use std::fs;
 use std::io::Write;
 
-#[macro_use] extern crate educe;
+use tokio::main;
+use std::time::Instant;
+use std::{thread, time};
 
-fn setup_input_file(filename: &str) {
-    let vector: Vec<i32> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-    match File::create(filename) {
-        Ok(mut file) => {
-            for &value in &vector {
-                file.write_all(&value.to_be_bytes()).unwrap();
-            }
-        }
-        Err(err) => {
-            eprintln!("Error creating file: {:?}", err);
-        }
-    }
-}
-
-fn main() {
+#[tokio::main]
+async fn main() {
+    /// Command line processing and file setup
     let args: Vec<String> = env::args().collect();
     let filename: &String = &args[1];
     let function: &String = &args[2].to_uppercase();
-    setup_input_file(filename);
 
-    let filename = format!("./{}", filename);
-    let mut vector = read_file(&filename);
-    println!("Before operation: {:?}", vector);
+    /// Setup and run the processor
+    let processor = Processor::new(filename, function);
+    let vector = processor.process_input();
 
-    let method = match function.as_str() {
-        "SQUARE" => MathematicalMethod::SQUARE,
-        "ROOT" => MathematicalMethod::ROOT,
-        _ => {
-            eprintln!("function not supported");
-            MathematicalMethod::SQUARE
-        }
-    };
+    /// Setting up the mpsc channel and cloning the sender
+    let (tx, mut rx) = mpsc::channel::<Message>(1);
+    let tx_one = tx.clone();
 
-    let mut transformation: Transformation = Transformation::new(vector, method.clone());
-    match &method {
-        &MathematicalMethod::SQUARE => transformation.square(),
-        &MathematicalMethod::ROOT => transformation.root(),
-        _ => {
-            eprintln!("function not supported");
-            transformation.root()
-        }
-    };
+    /// Create 2 tasks
+    tokio::spawn(async move {
+        let file_reader = FileReader::new(vector, tx_one.clone());
+        file_reader.send().await;
+        drop(tx_one);
+    });
+    tokio::spawn(async move {
+        let file_reader = FileReader::new(vector, tx.clone());
+        file_reader.send().await;
+        drop(tx);
+    });
 
-    let output_file: String = "./output.json".to_string();
-    write_to_file(&output_file, &transformation.vector)
+    /// Running the FileWriter actor to receive messages
+    let output_filename: String = "./output.json".to_string();
+    let file_writer = FileWriter::new(rx, output_filename);
+    actor.run().await;
 }
+
