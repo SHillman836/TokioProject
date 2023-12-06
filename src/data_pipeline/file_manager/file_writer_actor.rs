@@ -63,7 +63,7 @@ impl FileWriter {
     /// This async method waits until it receives a message and executes when it does
     ///
     /// # Arguments
-    /// * message (Message>): the message to write the the file
+    /// * message (<Message>): the message to write the the file
     ///
     /// # Returns
     /// None

@@ -1,4 +1,4 @@
-mod message;
-pub mod file_writer;
+pub mod file_writer_actor;
 pub mod file_setup;
-pub mod file_reader;
+pub mod file_reader_actor;
+pub mod transformation_actor;
