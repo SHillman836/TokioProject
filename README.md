@@ -27,7 +27,7 @@ A few extra things to note:
 ### How to run the program
 1. First please ensure you have rust installed on your computer. You can install it here `https://www.rust-lang.org/tools/install`.
 2. Then clone the project into your local files.
-3. Navigate to the root folder and run `cargo run <computation>`. You have 2 choices of computation - square and root. Square squares every integer in the input file before writing it, and root square roots them.
+3. Navigate to the root of the project in terminal and run `cargo run <computation>`. You have 2 choices of computation - square and root. Square squares every integer in the input file before writing it, and root square roots them.
 
 
 
