@@ -10,8 +10,8 @@ use super::super::super::enums::MathematicalMethod;
 /// This struct defines a file reader actor.
 ///
 /// # Attributes
-/// * filename (&str): name of the file to read
-/// * sender (Sender<MessageToTransformation>): sender
+/// * filename (&'a str): name of the file to read
+/// * router (RouterActor): router
 pub struct FileReaderActor<'a> {
     pub filename: &'a str,
     pub router: RouterActor,
@@ -23,7 +23,7 @@ impl<'a> FileReaderActor<'a> {
     ///
     /// # Arguments
     /// * filename (&str): the name of the file
-    /// * sender (Sender<MessageToTransformation>): sender
+    /// * router (RouterActor): router
     ///
     /// # Returns
     /// (FileReaderActor) the newly created struct
@@ -53,31 +53,33 @@ impl<'a> FileReaderActor<'a> {
     ///
     /// # Arguments
     /// * buffer (Vec<u8>): vector of u8 bytes
+    /// * method_type (MathematicalMethod): mathematical method
     ///
     /// # Returns
     /// None
     pub async fn send(&mut self, buffer: Vec<u8>, method_type: MathematicalMethod) {
         // Set an index.
-        let mut index: i32 = 0;
+        let mut index: i32 = 1;
 
-        // Loop through the buffer 4 bytes (1 integer)at a time, and push each integer
+        // Loop through the buffer 4 bytes (1 integer) at a time, and push each integer
         // to the empty vector along with the index.
         for chunk in buffer.chunks_exact(4) {
-        if let Ok(value) = chunk.try_into().map(i32::from_be_bytes) {
-            let message = MessageToTransformation {
-                tuple: (index, value),
-                mathematical_method: method_type.clone(),
-            };
-            self.router.route(message).await;
-        } else {
-            eprintln!("Failed to convert slice to i32: Invalid byte sequence");
+            if let Ok(value) = chunk.try_into().map(i32::from_be_bytes) {
+                println!("Sending tuple of index: {}, value: {} to router", index, value);
+                let message = MessageToTransformation {
+                    tuple: (index, value),
+                    mathematical_method: method_type.clone(),
+                };
+                self.router.route(message).await;
+            } else {
+                eprintln!("Failed to convert slice to i32: Invalid byte sequence");
+            }
+            index += 1;
         }
-        index += 1;
-    }
 
-    if !buffer.chunks_exact(4).remainder().is_empty() {
-        eprintln!("Warning: File Size is not a multiple of 4 bytes");
-    }
+        if !buffer.chunks_exact(4).remainder().is_empty() {
+            eprintln!("Warning: File Size is not a multiple of 4 bytes");
+        }
     }
 }
 

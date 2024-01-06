@@ -10,9 +10,10 @@ use super::super::super::messages::messages::MessageToWriter;
 /// # Attributes
 /// * receiver (mpsc::Receiver<MessageToTransformation>): receiver
 /// * sender (Sender<MessageToWriter>): sender
+/// * tuple ((i32, i32)): tuple
 pub struct TransformationActor {
     pub receiver: mpsc::Receiver<MessageToTransformation>,
-    pub sender: Sender<MessageToWriter>,
+    pub sender: mpsc::Sender<MessageToWriter>,
     pub tuple: (i32, i32),
 }
 
@@ -37,7 +38,7 @@ impl TransformationActor {
     /// This method squares all the numbers in a vector.
     ///
     /// # Arguments
-    /// * tuple (i32, i32): tuple of integers
+    /// None
     ///
     /// # Returns
     /// None
@@ -49,7 +50,7 @@ impl TransformationActor {
     /// This method square roots all the numbers in a vector.
     ///
     /// # Arguments
-    /// * tuple (i32, i32): tuple of integers
+    /// None
     ///
     /// # Returns
     /// None
@@ -67,6 +68,7 @@ impl TransformationActor {
     pub async fn run(mut self) {
         println!("transformation actor is running");
         while let Some(msg) = self.receiver.recv().await {
+            println!("Received message with tuple: {:?}", msg.tuple);
             self.tuple = msg.tuple;
             match msg.mathematical_method {
                 MathematicalMethod::SQUARE => self.square(),
@@ -75,14 +77,15 @@ impl TransformationActor {
                     eprintln!("function not supported");
                 }
             };
-            self.send();
+            println!("Sending transformed message with tuple of {:?} to FileWriterActor...", self.tuple);
+            self.send().await;
         }
     }
 
     /// This async method waits until it receives a message and executes when it does
     ///
     /// # Arguments
-    /// * tuple ((i32, i32): the tuple to write to the output file
+    /// None
     ///
     /// # Returns
     /// None

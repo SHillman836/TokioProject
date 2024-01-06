@@ -6,7 +6,6 @@ use super::super::enums::MathematicalMethod;
 /// # Attributes
 /// * tuple ((i32, i32)): a tuple of integers
 /// * mathematical_method (<MathematicalMethod>): the mathematical processing method
-/// * respond_to (oneshot::Sender<u32>): the message sender
 #[derive(Debug)]
 pub struct MessageToTransformation {
     pub tuple: (i32, i32),

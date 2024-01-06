@@ -20,11 +20,12 @@ use tokio::sync::{mpsc};
 async fn main() {
     // Command line processing and file setup
     let args: Vec<String> = env::args().collect();
-    let filename: String = args[1].clone();
-    let function: String = args[2].to_uppercase().clone();
+    let function: String = args[1].to_uppercase().clone();
+    let input_filename: String = "./input.txt".to_string();
+    let output_filename: String = "./output.json".to_string();
 
     // Setup and run the processor
-    let mut processor = Processor::new(&filename, &function);
+    let mut processor = Processor::new(&input_filename, &function, &output_filename);
     let method = processor.process_input();
 
     // Create senders for each TransformationActor
@@ -39,9 +40,10 @@ async fn main() {
     let tx_writer_clone_1 = tx_writer.clone();
     let tx_writer_clone_2 = tx_writer.clone();
 
+
     // Set up FileReaderActor task and pass in the router
     tokio::spawn(async move {
-        let mut file_reader = FileReaderActor::new(&filename, router);
+        let mut file_reader = FileReaderActor::new(&input_filename, router);
         let buffer = file_reader.read_file();
         file_reader.send(buffer, method).await;
     });
@@ -58,8 +60,8 @@ async fn main() {
     });
 
     // Running the FileWriter actor to receive messages
-    let output_filename: String = "./output.json".to_string();
     let file_writer = FileWriterActor::new(rx_writer, &output_filename);
     file_writer.run().await;
+
 }
 
