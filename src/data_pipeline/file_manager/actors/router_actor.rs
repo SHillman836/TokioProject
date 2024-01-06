@@ -1,11 +1,14 @@
-pub struct Router {
+use tokio::sync::mpsc;
+use super::super::super::messages::messages::MessageToTransformation;
+
+pub struct RouterActor {
     pub senders: Vec<mpsc::Sender<MessageToTransformation>>,
     pub current_index: usize,
 }
 
-impl Router {
+impl RouterActor {
     pub fn new(senders: Vec<mpsc::Sender<MessageToTransformation>>) -> Self {
-        Router { senders, current_index: 0 }
+        RouterActor { senders, current_index: 0 }
     }
 
     pub async fn route(&mut self, message: MessageToTransformation) {

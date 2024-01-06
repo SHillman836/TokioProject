@@ -4,6 +4,7 @@
 /// * `SQUARE` - Represents the operation of squaring a number.
 /// * `ROOT` - Represents the operation of finding the square root of a number.
 #[derive(Clone)]
+#[derive(Debug)]
 pub enum MathematicalMethod {
     SQUARE,
     ROOT,

@@ -1,8 +1,8 @@
 use tokio::sync::{mpsc, oneshot, mpsc::Sender};
 
-use super::super::enums::MathematicalMethod;
-use super::super::messages::messages::MessageToTransformation;
-use super::super::messages::messages::MessageToWriter;
+use super::super::super::enums::MathematicalMethod;
+use super::super::super::messages::messages::MessageToTransformation;
+use super::super::super::messages::messages::MessageToWriter;
 
 
 /// This struct deals with mathematical transformations

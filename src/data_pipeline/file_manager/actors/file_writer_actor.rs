@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use serde_json::json;
 
-use super::super::messages::messages::MessageToWriter;
+use super::super::super::messages::messages::MessageToWriter;
 
 /// This defines creates a FileWriterActor struct.
 ///

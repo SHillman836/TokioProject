@@ -3,8 +3,9 @@ use tokio::sync::{oneshot, mpsc::Sender};
 use std::fs::File;
 use std::io::Read;
 
-use super::super::messages::messages::MessageToTransformation;
-use super::super::enums::MathematicalMethod;
+use super::router_actor::RouterActor;
+use super::super::super::messages::messages::MessageToTransformation;
+use super::super::super::enums::MathematicalMethod;
 
 /// This struct defines a file reader actor.
 ///
@@ -13,7 +14,7 @@ use super::super::enums::MathematicalMethod;
 /// * sender (Sender<MessageToTransformation>): sender
 pub struct FileReaderActor<'a> {
     pub filename: &'a str,
-    pub sender: Sender<MessageToTransformation>
+    pub router: RouterActor,
 }
 
 /// This is the implementation for the FileReaderActor struct.
@@ -26,10 +27,10 @@ impl<'a> FileReaderActor<'a> {
     ///
     /// # Returns
     /// (FileReaderActor) the newly created struct
-    pub fn new(filename: &'a str, sender: Sender<MessageToTransformation>) -> Self {
+    pub fn new(filename: &'a str, router: RouterActor) -> Self {
         return FileReaderActor {
             filename,
-            sender
+            router
         }
     }
 
@@ -40,7 +41,7 @@ impl<'a> FileReaderActor<'a> {
     ///
     /// # Returns
     /// (Vec<u8>) vector of u8 bytes
-    pub fn read_file(self) -> Vec<u8> {
+    pub fn read_file(&mut self) -> Vec<u8> {
         let mut file = File::open(self.filename.to_string()).unwrap();
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).unwrap();
@@ -55,34 +56,28 @@ impl<'a> FileReaderActor<'a> {
     ///
     /// # Returns
     /// None
-    pub async fn send(self, buffer: Vec<u8>, method_type: MathematicalMethod) {
+    pub async fn send(&mut self, buffer: Vec<u8>, method_type: MathematicalMethod) {
         // Set an index.
         let mut index: i32 = 0;
 
         // Loop through the buffer 4 bytes (1 integer)at a time, and push each integer
         // to the empty vector along with the index.
         for chunk in buffer.chunks_exact(4) {
-            let value = i32::from_be_bytes(chunk.try_into().expect("Failed to convert slice to i32: Invalid byte sequence"));
-
-            // Open a oneshot channel and send the integer to another actor for processing.
-            let (send, recv) = oneshot::channel();
-            let message = MessageToTransformation { tuple: (index, value),
-                                                    mathematical_method: method_type.clone(),
-                                                    respond_to: send };
-            let _ = self.sender.send(message).await;
-            match recv.await {
-                Err(e) => println!("{}", e),
-                Ok(outcome) => println!("here is the outcome of sending to the transformation actor: {}", outcome)
-            }
+        if let Ok(value) = chunk.try_into().map(i32::from_be_bytes) {
+            let message = MessageToTransformation {
+                tuple: (index, value),
+                mathematical_method: method_type.clone(),
+            };
+            self.router.route(message).await;
+        } else {
+            eprintln!("Failed to convert slice to i32: Invalid byte sequence");
         }
-
-        // Increment the index.
         index += 1;
+    }
 
-        ///Display this error message if the byte multiple is wrong.
-        if !buffer.chunks_exact(4).remainder().is_empty() {
-            eprintln!("Warning: File Size is not a multiple of 4 bytes")
-        }
+    if !buffer.chunks_exact(4).remainder().is_empty() {
+        eprintln!("Warning: File Size is not a multiple of 4 bytes");
+    }
     }
 }
 
